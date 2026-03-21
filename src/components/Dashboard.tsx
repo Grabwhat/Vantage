@@ -1,0 +1,265 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { courses, subjects } from '../data/courses'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card'
+import { Progress } from './ui/progress'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { Award, Clock, BookOpen, ArrowRight, Target, Flame } from 'lucide-react'
+
+export function Dashboard() {
+  const [progressData, setProgressData] = useState<{ [courseId: string]: string[] }>(
+    {},
+  )
+
+  useEffect(() => {
+    const data: { [courseId: string]: string[] } = {}
+    courses.forEach((course) => {
+      const stored = localStorage.getItem(`course-${course.id}-progress`)
+      if (stored) {
+        data[course.id] = JSON.parse(stored)
+      }
+    })
+    setProgressData(data)
+  }, [])
+
+  const enrolledCourses = courses.filter((course) => {
+    const completed = progressData[course.id]?.length || 0
+    const hasStarted = Boolean(localStorage.getItem(`course-${course.id}-last-lesson`))
+    return (completed > 0 || hasStarted) && completed < course.lessons.length
+  })
+
+  const totalLessonsCompleted = Object.values(progressData).reduce(
+    (acc, lessons) => acc + lessons.length,
+    0,
+  )
+
+  const completedCourses = courses.filter((course) => {
+    const completed = progressData[course.id]?.length || 0
+    return completed === course.lessons.length && completed > 0
+  }).length
+
+  const totalTimeSpent = enrolledCourses.reduce((acc, course) => {
+    const completedLessons = progressData[course.id] || []
+    const time = course.lessons
+      .filter((lesson) => completedLessons.includes(lesson.id))
+      .reduce((sum, lesson) => {
+        const lessonMinutes = lesson.components.reduce((total, component) => {
+          const minutes = parseInt(component.duration, 10)
+          return total + (Number.isNaN(minutes) ? 0 : minutes)
+        }, 0)
+        return sum + lessonMinutes
+      }, 0)
+    return acc + time
+  }, 0)
+
+  const currentStreak = 0
+
+  const stats = [
+    {
+      icon: BookOpen,
+      label: 'Lessons Completed',
+      value: totalLessonsCompleted,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100',
+    },
+    {
+      icon: Award,
+      label: 'Courses Completed',
+      value: completedCourses,
+      color: 'text-green-600',
+      bgColor: 'bg-green-100',
+    },
+    {
+      icon: Clock,
+      label: 'Minutes Learned',
+      value: totalTimeSpent,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100',
+    },
+    {
+      icon: Flame,
+      label: 'Day Streak',
+      value: currentStreak,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100',
+    },
+  ]
+
+  return (
+    <div className="py-12">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">My Dashboard</h1>
+          <p className="text-lg text-muted-foreground">
+            Track your learning progress and achievements
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {stats.map((stat) => (
+            <Card key={stat.label}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
+                    <p className="text-3xl font-bold">{stat.value}</p>
+                  </div>
+                  <div
+                    className={`size-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}
+                  >
+                    <stat.icon className={`size-6 ${stat.color}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {enrolledCourses.length > 0 ? (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Continue Learning</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {enrolledCourses.map((course) => {
+                const subject = subjects.find((s) => s.id === course.subjectId)
+                const completedLessons = progressData[course.id] || []
+                const progress =
+                  (completedLessons.length / course.lessons.length) * 100
+                const isComplete = completedLessons.length === course.lessons.length
+
+                const lastLessonId = localStorage.getItem(
+                  `course-${course.id}-last-lesson`,
+                )
+                const lastLesson = course.lessons.find(
+                  (lesson) => lesson.id === lastLessonId,
+                )
+                const nextLesson =
+                  lastLesson && !completedLessons.includes(lastLesson.id)
+                    ? lastLesson
+                    : course.lessons.find(
+                        (lesson) => !completedLessons.includes(lesson.id),
+                      )
+                const currentLessonParts = nextLesson
+                  ? JSON.parse(
+                      localStorage.getItem(`lesson-${nextLesson.id}-parts`) || '[]',
+                    )
+                  : []
+
+                return (
+                  <Card key={course.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between mb-2">
+                        <div
+                          className={`size-10 ${subject?.color} rounded-lg flex items-center justify-center`}
+                        >
+                          <div className="size-5 bg-white/30 rounded" />
+                        </div>
+                        {isComplete ? (
+                          <Badge className="bg-green-100 text-green-700 border-green-200">
+                            Completed
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">In Progress</Badge>
+                        )}
+                      </div>
+                      <CardTitle className="line-clamp-2">{course.title}</CardTitle>
+                      <CardDescription className="text-muted-foreground">
+                        {completedLessons.length} of {course.lessons.length} lessons completed
+                        {nextLesson && (
+                          <>
+                            {' '}
+                            · {currentLessonParts.length}/{nextLesson.components.length} parts
+                            in {nextLesson.title}
+                          </>
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress value={progress} className="h-2 mb-4" />
+                      {!isComplete && nextLesson ? (
+                        <Link to={`/subjects/${course.subjectId}/${course.id}/${nextLesson.id}`}>
+                          <Button variant="outline" className="w-full gap-2">
+                            Continue: {nextLesson.title}
+                            <ArrowRight className="size-4" />
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link to={`/subjects/${course.subjectId}/${course.id}/overview`}>
+                          <Button variant="outline" className="w-full gap-2">
+                            Review Course
+                            <ArrowRight className="size-4" />
+                          </Button>
+                        </Link>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
+        ) : (
+          <Card className="mb-12">
+            <CardContent className="p-12 text-center">
+              <div className="size-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="size-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Start Your Learning Journey</h3>
+              <p className="text-muted-foreground mb-6">
+                You haven&apos;t started any courses yet. Browse our subjects to get
+                started!
+              </p>
+              <Link to="/subjects">
+                <Button size="lg" className="gap-2">
+                  Explore Courses <ArrowRight className="size-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
+        {completedCourses > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Achievements</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <div className="size-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Award className="size-8 text-yellow-600" />
+                  </div>
+                  <h3 className="font-semibold mb-2">First Steps</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Completed your first lesson
+                  </p>
+                </CardContent>
+              </Card>
+              {completedCourses >= 1 && (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <div className="size-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Target className="size-8 text-green-600" />
+                    </div>
+                    <h3 className="font-semibold mb-2">Course Master</h3>
+                    <p className="text-sm text-muted-foreground">Completed a full course</p>
+                  </CardContent>
+                </Card>
+              )}
+              {currentStreak >= 7 && (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <div className="size-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Flame className="size-8 text-orange-600" />
+                    </div>
+                    <h3 className="font-semibold mb-2">Week Warrior</h3>
+                    <p className="text-sm text-muted-foreground">7 day learning streak</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

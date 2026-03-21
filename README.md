@@ -15,22 +15,32 @@ It’s designed to make psychology education **accessible, engaging, and easy to
 - Multiple psychology subjects
 - Lesson formats: video, article, quiz
 
+<img width="1287" height="689" alt="Screenshot 2026-03-20 195651" src="https://github.com/user-attachments/assets/12ef67c2-8b69-416b-9cfc-571c280d3bcb" />
+
 ### 🧩 Interactive Quizzes
 - Instant feedback
 - Hints + explanations
+- 
+<img width="986" height="682" alt="Screenshot 2026-03-20 195943" src="https://github.com/user-attachments/assets/8b2d72e4-586b-459c-aaff-a51b3d018567" />
 
 ### 📈 Progress Tracking
 - Lesson completion
 - Course completion
 - Daily streaks
+  
+<img width="1313" height="670" alt="Screenshot 2026-03-20 195838" src="https://github.com/user-attachments/assets/175abcdc-95b1-47b7-8e55-35a2bda214f5" />
 
 ### 🏠 Personalized Home
 - “Continue Learning”
 - Progress stats
 - Fun fact system
 
+<img width="1167" height="835" alt="Screenshot 2026-03-20 195442" src="https://github.com/user-attachments/assets/86b2fcee-baeb-4794-91a3-3334af5dca59" />
+
 ### 🎨 Themes
 - Dark / Light / System theme toggle
+  
+<img width="1008" height="715" alt="Screenshot 2026-03-20 200058" src="https://github.com/user-attachments/assets/b6c68947-4fcf-4a24-9ced-62bccdfc5d3e" />
 
 ---
 

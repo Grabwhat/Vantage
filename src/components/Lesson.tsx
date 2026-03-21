@@ -14,14 +14,17 @@ import {
   Lightbulb,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuth } from './AuthProvider'
+import { supabase } from '../lib/supabase'
 
 export function Lesson() {
   const { subjectId, courseId, lessonId } = useParams()
+  const { user } = useAuth()
   const course = courses.find((c) => c.id === courseId && c.subjectId === subjectId)
   const subject = subjects.find((s) => s.id === subjectId)
   const lesson = course?.lessons.find((l) => l.id === lessonId)
 
-  const [completedLessons, setCompletedLessons] = useState<string[]>([])
+  const [isLessonComplete, setIsLessonComplete] = useState(false)
   const [currentComponentIndex, setCurrentComponentIndex] = useState(0)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: number }>(
@@ -39,23 +42,35 @@ export function Lesson() {
   const [completedParts, setCompletedParts] = useState<string[]>([])
 
   useEffect(() => {
-    if (courseId) {
-      const stored = localStorage.getItem(`course-${courseId}-progress`)
-      if (stored) {
-        setCompletedLessons(JSON.parse(stored))
+    const loadProgress = async () => {
+      if (!user || !courseId || !lessonId) return
+      const { data, error } = await supabase
+        .from('lesson_progress')
+        .select('parts_completed, completed')
+        .eq('user_id', user.id)
+        .eq('course_id', courseId)
+        .eq('lesson_id', lessonId)
+        .maybeSingle()
+      if (!error && data) {
+        setCompletedParts(data.parts_completed ?? [])
+        setIsLessonComplete(Boolean(data.completed))
       }
+
+      await supabase
+        .from('lesson_progress')
+        .upsert(
+          {
+            user_id: user.id,
+            course_id: courseId,
+            lesson_id: lessonId,
+            last_started_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,course_id,lesson_id' },
+        )
     }
-    if (lessonId) {
-      const storedParts = localStorage.getItem(`lesson-${lessonId}-parts`)
-      if (storedParts) {
-        setCompletedParts(JSON.parse(storedParts))
-      }
-    }
-    if (courseId && lessonId) {
-      localStorage.setItem(`course-${courseId}-last-lesson`, lessonId)
-      localStorage.setItem(`course-${courseId}-last-lesson-ts`, String(Date.now()))
-    }
-  }, [courseId])
+
+    loadProgress()
+  }, [user, courseId, lessonId])
 
   if (!course || !subject || !lesson) {
     return (
@@ -75,24 +90,30 @@ export function Lesson() {
   const previousLesson = currentIndex > 0 ? course.lessons[currentIndex - 1] : null
   const nextLesson =
     currentIndex < course.lessons.length - 1 ? course.lessons[currentIndex + 1] : null
-  const isCompleted = completedLessons.includes(lessonId || '')
+  const isCompleted = isLessonComplete
   const partsCompletedCount = completedParts.length
 
-  const syncLessonCompletion = (nextParts: string[]) => {
-    if (!lessonId) return
+  const syncLessonCompletion = async (nextParts: string[]) => {
+    if (!user || !lessonId || !courseId) return
     const allPartsDone = nextParts.length >= lesson.components.length
-    if (allPartsDone && !completedLessons.includes(lessonId)) {
-      const updated = [...completedLessons, lessonId]
-      setCompletedLessons(updated)
-      localStorage.setItem(`course-${courseId}-progress`, JSON.stringify(updated))
+    setIsLessonComplete(allPartsDone)
+    await supabase
+      .from('lesson_progress')
+      .upsert(
+        {
+          user_id: user.id,
+          course_id: courseId,
+          lesson_id: lessonId,
+          parts_completed: nextParts,
+          completed: allPartsDone,
+          last_started_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,course_id,lesson_id' },
+      )
+    if (allPartsDone) {
       toast.success('Lesson completed!', {
         description: 'Great job! Keep learning.',
       })
-    }
-    if (!allPartsDone && completedLessons.includes(lessonId)) {
-      const updated = completedLessons.filter((id) => id !== lessonId)
-      setCompletedLessons(updated)
-      localStorage.setItem(`course-${courseId}-progress`, JSON.stringify(updated))
     }
   }
 
@@ -102,7 +123,6 @@ export function Lesson() {
     if (!completedParts.includes(partId)) {
       const nextParts = [...completedParts, partId]
       setCompletedParts(nextParts)
-      localStorage.setItem(`lesson-${lessonId}-parts`, JSON.stringify(nextParts))
       syncLessonCompletion(nextParts)
     }
   }
@@ -113,7 +133,6 @@ export function Lesson() {
     if (completedParts.includes(partId)) {
       const nextParts = completedParts.filter((id) => id !== partId)
       setCompletedParts(nextParts)
-      localStorage.setItem(`lesson-${lessonId}-parts`, JSON.stringify(nextParts))
       syncLessonCompletion(nextParts)
     }
   }

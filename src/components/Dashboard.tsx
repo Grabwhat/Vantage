@@ -6,26 +6,51 @@ import { Progress } from './ui/progress'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Award, Clock, BookOpen, ArrowRight, Target, Flame } from 'lucide-react'
+import { useAuth } from './AuthProvider'
+import { supabase } from '../lib/supabase'
 
 export function Dashboard() {
+  const { user } = useAuth()
   const [progressData, setProgressData] = useState<{ [courseId: string]: string[] }>(
     {},
   )
+  const [lessonProgress, setLessonProgress] = useState<
+    {
+      course_id: string
+      lesson_id: string
+      parts_completed: string[] | null
+      completed: boolean | null
+      last_started_at: string | null
+    }[]
+  >([])
 
   useEffect(() => {
-    const data: { [courseId: string]: string[] } = {}
-    courses.forEach((course) => {
-      const stored = localStorage.getItem(`course-${course.id}-progress`)
-      if (stored) {
-        data[course.id] = JSON.parse(stored)
-      }
-    })
-    setProgressData(data)
-  }, [])
+    const load = async () => {
+      if (!user) return
+      const { data } = await supabase
+        .from('lesson_progress')
+        .select('course_id, lesson_id, parts_completed, completed, last_started_at')
+        .eq('user_id', user.id)
+
+      const rows = data ?? []
+      setLessonProgress(rows)
+
+      const courseCompleted: { [courseId: string]: string[] } = {}
+      rows.forEach((row) => {
+        if (row.completed) {
+          courseCompleted[row.course_id] = courseCompleted[row.course_id] || []
+          courseCompleted[row.course_id].push(row.lesson_id)
+        }
+      })
+      setProgressData(courseCompleted)
+    }
+
+    load()
+  }, [user])
 
   const enrolledCourses = courses.filter((course) => {
     const completed = progressData[course.id]?.length || 0
-    const hasStarted = Boolean(localStorage.getItem(`course-${course.id}-last-lesson`))
+    const hasStarted = lessonProgress.some((row) => row.course_id === course.id)
     return (completed > 0 || hasStarted) && completed < course.lessons.length
   })
 
@@ -129,11 +154,16 @@ export function Dashboard() {
                   (completedLessons.length / course.lessons.length) * 100
                 const isComplete = completedLessons.length === course.lessons.length
 
-                const lastLessonId = localStorage.getItem(
-                  `course-${course.id}-last-lesson`,
-                )
+                const lastRow = lessonProgress
+                  .filter((row) => row.course_id === course.id)
+                  .sort((a, b) => {
+                    const aT = a.last_started_at ? Date.parse(a.last_started_at) : 0
+                    const bT = b.last_started_at ? Date.parse(b.last_started_at) : 0
+                    return bT - aT
+                  })[0]
+
                 const lastLesson = course.lessons.find(
-                  (lesson) => lesson.id === lastLessonId,
+                  (lesson) => lesson.id === lastRow?.lesson_id,
                 )
                 const nextLesson =
                   lastLesson && !completedLessons.includes(lastLesson.id)
@@ -141,11 +171,7 @@ export function Dashboard() {
                     : course.lessons.find(
                         (lesson) => !completedLessons.includes(lesson.id),
                       )
-                const currentLessonParts = nextLesson
-                  ? JSON.parse(
-                      localStorage.getItem(`lesson-${nextLesson.id}-parts`) || '[]',
-                    )
-                  : []
+                const currentLessonParts = lastRow?.parts_completed || []
 
                 return (
                   <Card key={course.id} className="hover:shadow-lg transition-shadow">

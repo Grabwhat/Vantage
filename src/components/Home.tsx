@@ -5,26 +5,35 @@ import { useAuth } from './AuthProvider'
 import { courses } from '../data/courses'
 import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { supabase } from '../lib/supabase'
 
 export function Home() {
   const { user, profile } = useAuth()
   const [funFact, setFunFact] = useState<string | null>(null)
   const [funFactError, setFunFactError] = useState<string | null>(null)
+  const [lessonProgress, setLessonProgress] = useState<
+    {
+      course_id: string
+      lesson_id: string
+      completed: boolean | null
+      last_started_at: string | null
+    }[]
+  >([])
 
   const progressData = useMemo(() => {
     const data: Record<string, string[]> = {}
-    courses.forEach((course) => {
-      const stored = localStorage.getItem(`course-${course.id}-progress`)
-      if (stored) {
-        data[course.id] = JSON.parse(stored)
+    lessonProgress.forEach((row) => {
+      if (row.completed) {
+        data[row.course_id] = data[row.course_id] || []
+        data[row.course_id].push(row.lesson_id)
       }
     })
     return data
-  }, [])
+  }, [lessonProgress])
 
   const enrolledCourses = courses.filter((course) => {
     const completed = progressData[course.id]?.length || 0
-    const hasStarted = Boolean(localStorage.getItem(`course-${course.id}-last-lesson`))
+    const hasStarted = lessonProgress.some((row) => row.course_id === course.id)
     return (completed > 0 || hasStarted) && completed < course.lessons.length
   })
   const totalLessonsCompleted = Object.values(progressData).reduce(
@@ -39,15 +48,21 @@ export function Home() {
   const continueTarget = enrolledCourses
     .map((course) => {
       const completed = progressData[course.id] || []
-      const lastLessonId = localStorage.getItem(`course-${course.id}-last-lesson`)
-      const lastLesson = course.lessons.find((lesson) => lesson.id === lastLessonId)
+      const lastRow = lessonProgress
+        .filter((row) => row.course_id === course.id)
+        .sort((a, b) => {
+          const aT = a.last_started_at ? Date.parse(a.last_started_at) : 0
+          const bT = b.last_started_at ? Date.parse(b.last_started_at) : 0
+          return bT - aT
+        })[0]
+      const lastLesson = course.lessons.find((lesson) => lesson.id === lastRow?.lesson_id)
       const nextLesson =
         lastLesson && !completed.includes(lastLesson.id)
           ? lastLesson
           : course.lessons.find((lesson) => !completed.includes(lesson.id))
-      const lastStartedAt = Number(
-        localStorage.getItem(`course-${course.id}-last-lesson-ts`) || 0,
-      )
+      const lastStartedAt = lastRow?.last_started_at
+        ? Date.parse(lastRow.last_started_at)
+        : 0
       return { course, nextLesson, completedCount: completed.length, lastStartedAt }
     })
     .sort((a, b) => b.lastStartedAt - a.lastStartedAt)[0]
@@ -68,6 +83,19 @@ export function Home() {
 
     loadFact()
   }, [])
+
+  useEffect(() => {
+    const loadProgress = async () => {
+      if (!user) return
+      const { data } = await supabase
+        .from('lesson_progress')
+        .select('course_id, lesson_id, completed, last_started_at')
+        .eq('user_id', user.id)
+      setLessonProgress(data ?? [])
+    }
+
+    loadProgress()
+  }, [user])
 
   return (
     <div className="bg-background text-foreground min-h-[calc(100vh-80px)]">

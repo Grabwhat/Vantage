@@ -6,6 +6,7 @@ import { Progress } from './ui/progress'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Award, Clock, BookOpen, ArrowRight, Target, Flame } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 import { useAuth } from './AuthProvider'
 import { supabase } from '../lib/supabase'
 
@@ -23,6 +24,7 @@ export function Dashboard() {
       last_started_at: string | null
     }[]
   >([])
+  const [currentStreak, setCurrentStreak] = useState(0)
 
   useEffect(() => {
     const load = async () => {
@@ -43,6 +45,13 @@ export function Dashboard() {
         }
       })
       setProgressData(courseCompleted)
+
+      const { data: streakRow } = await supabase
+        .from('user_streaks')
+        .select('current_streak')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      setCurrentStreak(streakRow?.current_streak ?? 0)
     }
 
     load()
@@ -64,21 +73,27 @@ export function Dashboard() {
     return completed === course.lessons.length && completed > 0
   }).length
 
-  const totalTimeSpent = enrolledCourses.reduce((acc, course) => {
-    const completedLessons = progressData[course.id] || []
-    const time = course.lessons
-      .filter((lesson) => completedLessons.includes(lesson.id))
-      .reduce((sum, lesson) => {
-        const lessonMinutes = lesson.components.reduce((total, component) => {
-          const minutes = parseInt(component.duration, 10)
-          return total + (Number.isNaN(minutes) ? 0 : minutes)
-        }, 0)
-        return sum + lessonMinutes
-      }, 0)
-    return acc + time
-  }, 0)
+  const totalTimeSpent = lessonProgress.reduce((acc, row) => {
+    const course = courses.find((c) => c.id === row.course_id)
+    const lesson = course?.lessons.find((l) => l.id === row.lesson_id)
+    if (!lesson) return acc
 
-  const currentStreak = 0
+    const parts = row.parts_completed ?? []
+    const minutes = parts.length
+      ? lesson.components.reduce((sum, component) => {
+          if (!parts.includes(component.id)) return sum
+          const value = parseInt(component.duration, 10)
+          return sum + (Number.isNaN(value) ? 0 : value)
+        }, 0)
+      : row.completed
+        ? lesson.components.reduce((sum, component) => {
+            const value = parseInt(component.duration, 10)
+            return sum + (Number.isNaN(value) ? 0 : value)
+          }, 0)
+        : 0
+
+    return acc + minutes
+  }, 0)
 
   const stats = [
     {
@@ -128,7 +143,22 @@ export function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
-                    <p className="text-3xl font-bold">{stat.value}</p>
+                    {stat.label === 'Minutes Learned' ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="text-3xl font-bold cursor-pointer">
+                            {stat.value}
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            {(stat.value / 60).toFixed(1)} hours
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <p className="text-3xl font-bold">{stat.value}</p>
+                    )}
                   </div>
                   <div
                     className={`size-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}
@@ -171,7 +201,14 @@ export function Dashboard() {
                     : course.lessons.find(
                         (lesson) => !completedLessons.includes(lesson.id),
                       )
-                const currentLessonParts = lastRow?.parts_completed || []
+                const currentLessonParts =
+                  nextLesson
+                    ? lessonProgress.find(
+                        (row) =>
+                          row.course_id === course.id &&
+                          row.lesson_id === nextLesson.id,
+                      )?.parts_completed || []
+                    : []
 
                 return (
                   <Card key={course.id} className="hover:shadow-lg transition-shadow">

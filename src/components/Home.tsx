@@ -19,6 +19,7 @@ export function Home() {
       last_started_at: string | null
     }[]
   >([])
+  const [currentStreak, setCurrentStreak] = useState(0)
 
   const progressData = useMemo(() => {
     const data: Record<string, string[]> = {}
@@ -92,6 +93,13 @@ export function Home() {
         .select('course_id, lesson_id, completed, last_started_at')
         .eq('user_id', user.id)
       setLessonProgress(data ?? [])
+
+      const { data: streakRow } = await supabase
+        .from('user_streaks')
+        .select('current_streak')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      setCurrentStreak(streakRow?.current_streak ?? 0)
     }
 
     loadProgress()
@@ -234,7 +242,7 @@ export function Home() {
 
               <div className="grid gap-6 md:grid-cols-3">
                 {[
-                  { label: 'Current Streak', value: 0, icon: Flame },
+                  { label: 'Current Streak', value: currentStreak, icon: Flame },
                   { label: 'Courses Completed', value: completedCourses, icon: Award },
                   { label: 'Lessons Completed', value: totalLessonsCompleted, icon: BookOpen },
                 ].map((stat) => (

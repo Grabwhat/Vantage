@@ -54,6 +54,9 @@ export function Lesson() {
       if (!error && data) {
         setCompletedParts(data.parts_completed ?? [])
         setIsLessonComplete(Boolean(data.completed))
+      } else {
+        setCompletedParts([])
+        setIsLessonComplete(false)
       }
 
       await supabase
@@ -93,9 +96,47 @@ export function Lesson() {
   const isCompleted = isLessonComplete
   const partsCompletedCount = completedParts.length
 
+  const getLocalDateString = (date: Date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  const updateStreak = async () => {
+    if (!user) return
+    const today = getLocalDateString(new Date())
+    const yesterdayDate = new Date()
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1)
+    const yesterday = getLocalDateString(yesterdayDate)
+
+    const { data } = await supabase
+      .from('user_streaks')
+      .select('current_streak,last_completed_date')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const lastDate = data?.last_completed_date as string | null
+    const current = data?.current_streak ?? 0
+
+    if (lastDate === today) return
+
+    const nextStreak = lastDate === yesterday ? current + 1 : 1
+
+    await supabase.from('user_streaks').upsert(
+      {
+        user_id: user.id,
+        current_streak: nextStreak,
+        last_completed_date: today,
+      },
+      { onConflict: 'user_id' },
+    )
+  }
+
   const syncLessonCompletion = async (nextParts: string[]) => {
     if (!user || !lessonId || !courseId) return
     const allPartsDone = nextParts.length >= lesson.components.length
+    const wasComplete = isLessonComplete
     setIsLessonComplete(allPartsDone)
     await supabase
       .from('lesson_progress')
@@ -110,10 +151,11 @@ export function Lesson() {
         },
         { onConflict: 'user_id,course_id,lesson_id' },
       )
-    if (allPartsDone) {
+    if (allPartsDone && !wasComplete) {
       toast.success('Lesson completed!', {
         description: 'Great job! Keep learning.',
       })
+      await updateStreak()
     }
   }
 

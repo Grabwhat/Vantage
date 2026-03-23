@@ -106,9 +106,9 @@ export function Home() {
   }, [user])
 
   return (
-    <div className="bg-background text-foreground min-h-[calc(100vh-80px)]">
+    <div className="bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-foreground min-h-screen">
       <div className="space-y-16 pb-16">
-        <section className="bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 py-20">
+        <section className="py-20 w-full">
           <div className="max-w-6xl mx-auto px-4">
             <div className="max-w-5xl mx-auto text-center">
               {user && (

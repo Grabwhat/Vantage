@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, PlayCircle, BookOpen, Flame, Award } from 'lucide-react'
 import { Button } from './ui/button'
 import { useAuth } from './AuthProvider'
-import { courses } from '../data/courses'
+import { courses, subjects } from '../data/courses'
 import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { supabase } from '../lib/supabase'
@@ -67,6 +67,9 @@ export function Home() {
       return { course, nextLesson, completedCount: completed.length, lastStartedAt }
     })
     .sort((a, b) => b.lastStartedAt - a.lastStartedAt)[0]
+  const continueSubject = continueTarget
+    ? subjects.find((subject) => subject.id === continueTarget.course.subjectId)
+    : undefined
 
   useEffect(() => {
     const loadFact = async () => {
@@ -107,19 +110,19 @@ export function Home() {
 
   return (
     <div className="bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-foreground min-h-screen">
-      <div className="space-y-16 pb-16">
-        <section className="py-20 w-full">
+      <div className="space-y-6 pb-10">
+        <section className="py-10 w-full">
           <div className="max-w-6xl mx-auto px-4">
             <div className="max-w-5xl mx-auto text-center">
               {user && (
-                <p className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4 drop-shadow-sm">
+                <p className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4 drop-shadow-sm break-words">
                   Welcome back, {profile?.username || 'there'}
                 </p>
               )}
-              <h1 className="text-5xl md:text-4xl font-bold mb-6 leading-[1.2] pb-1 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              <h1 className="text-5xl md:text-4xl font-bold mb-6 leading-[1.2] pb-1 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent break-words">
                 Master the Psychology of Life With Vantage
               </h1>
-              <p className="text-xl text-muted-foreground dark:text-white mb-8">
+              <p className="text-xl text-muted-foreground dark:text-white mb-8 break-words">
                 Explore the fascinating world of psychology through interactive lessons,
                 practice exercises, and evidence-based learning. Understand the mind,
                 behavior, and human experience.
@@ -152,7 +155,7 @@ export function Home() {
         </section>
 
         {!user ? (
-          <section className="py-16">
+          <section className="py-10">
             <div className="max-w-6xl mx-auto px-4">
               <h2 className="text-3xl font-bold mb-8 text-center">
                 Why Choose Vantage
@@ -176,21 +179,25 @@ export function Home() {
                     key={item.title}
                     className="rounded-2xl border border-border bg-card p-6 shadow-sm"
                   >
-                    <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-                    <p className="text-muted-foreground dark:text-white">{item.text}</p>
+                    <h3 className="text-lg font-semibold mb-2 break-words">
+                      {item.title}
+                    </h3>
+                    <p className="text-muted-foreground dark:text-white break-words">
+                      {item.text}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
           </section>
         ) : (
-          <section className="py-16">
+          <section className="py-10">
             <div className="max-w-6xl mx-auto px-4">
             <div className="mb-10 rounded-2xl border border-border bg-card p-6 shadow-sm">
               <p className="text-sm text-muted-foreground dark:text-white mb-2">
                 Fun Fact
               </p>
-              <p className="text-lg dark:text-white">
+              <p className="text-lg dark:text-white break-words">
                 {funFactError ?? funFact ?? 'Loading a fun fact...'}
               </p>
             </div>
@@ -202,11 +209,18 @@ export function Home() {
                   >
                     <Card className="hover:shadow-lg transition-shadow">
                       <CardHeader>
-                        <CardTitle className="text-2xl flex items-center gap-2">
+                        <div className="flex items-start justify-between mb-2">
+                          <div
+                            className={`size-10 ${continueSubject?.color} rounded-lg flex items-center justify-center`}
+                          >
+                            <div className="size-5 bg-white/30 rounded" />
+                          </div>
+                        </div>
+                        <CardTitle className="text-2xl flex items-center gap-2 min-w-0">
                           <PlayCircle className="size-5" />
-                          Continue Learning
+                          <span className="break-words">Continue Learning</span>
                         </CardTitle>
-                        <p className="text-muted-foreground dark:text-white">
+                        <p className="text-muted-foreground dark:text-white break-words">
                           {continueTarget.course.title} ·{' '}
                           {continueTarget.nextLesson.title}
                         </p>
@@ -222,11 +236,11 @@ export function Home() {
                   <Link to="/dashboard">
                     <Card className="hover:shadow-lg transition-shadow">
                       <CardHeader>
-                        <CardTitle className="text-2xl flex items-center gap-2">
+                        <CardTitle className="text-2xl flex items-center gap-2 min-w-0">
                           <PlayCircle className="size-5" />
-                          Your Dashboard
+                          <span className="break-words">Your Dashboard</span>
                         </CardTitle>
-                        <p className="text-muted-foreground dark:text-white">
+                        <p className="text-muted-foreground dark:text-white break-words">
                           Pick up where you left off and track your progress.
                         </p>
                       </CardHeader>
@@ -242,23 +256,43 @@ export function Home() {
 
               <div className="grid gap-6 md:grid-cols-3">
                 {[
-                  { label: 'Current Streak', value: currentStreak, icon: Flame },
-                  { label: 'Courses Completed', value: completedCourses, icon: Award },
-                  { label: 'Lessons Completed', value: totalLessonsCompleted, icon: BookOpen },
+                  {
+                    label: 'Current Streak',
+                    value: currentStreak,
+                    icon: Flame,
+                    color: 'text-orange-600',
+                    bgColor: 'bg-orange-100',
+                  },
+                  {
+                    label: 'Courses Completed',
+                    value: completedCourses,
+                    icon: Award,
+                    color: 'text-green-600',
+                    bgColor: 'bg-green-100',
+                  },
+                  {
+                    label: 'Lessons Completed',
+                    value: totalLessonsCompleted,
+                    icon: BookOpen,
+                    color: 'text-blue-600',
+                    bgColor: 'bg-blue-100',
+                  },
                 ].map((stat) => (
                   <div
                     key={stat.label}
                     className="rounded-2xl border border-border bg-card p-6 shadow-sm"
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground dark:text-white mb-1">
+                      <div className="min-w-0">
+                        <p className="text-sm text-muted-foreground dark:text-white mb-1 break-words">
                           {stat.label}
                         </p>
-                        <p className="text-3xl font-bold">{stat.value}</p>
+                        <p className="text-3xl font-bold break-words">{stat.value}</p>
                       </div>
-                      <div className="size-11 rounded-lg bg-muted flex items-center justify-center">
-                        <stat.icon className="size-5 text-muted-foreground dark:text-white" />
+                      <div
+                        className={`size-11 rounded-lg ${stat.bgColor} flex items-center justify-center`}
+                      >
+                        <stat.icon className={`size-5 ${stat.color}`} />
                       </div>
                     </div>
                   </div>

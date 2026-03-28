@@ -120,7 +120,7 @@ export function Home() {
                 </p>
               )}
               <h1 className="text-5xl md:text-4xl font-bold mb-6 leading-[1.2] pb-1 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent break-words">
-                Master the Psychology of Life With Vantage
+                Master the Psychology of Life With Dianoia
               </h1>
               <p className="text-xl text-muted-foreground dark:text-white mb-8 break-words">
                 Explore the fascinating world of psychology through interactive lessons,
@@ -158,7 +158,7 @@ export function Home() {
           <section className="py-10">
             <div className="max-w-6xl mx-auto px-4">
               <h2 className="text-3xl font-bold mb-8 text-center">
-                Why Choose Vantage
+                Why Choose Dianoia
               </h2>
               <div className="grid gap-6 md:grid-cols-3">
                 {[

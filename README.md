@@ -1,6 +1,6 @@
-# 🧠 Vantage — Psychology Learning Platform
+# 🧠 Dianoia — Psychology Learning Platform
 
-Vantage is a web-based psychology learning platform that offers structured courses, interactive lessons, quizzes, and progress tracking.  
+Dianoia is a web-based psychology learning platform that offers structured courses, interactive lessons, quizzes, and progress tracking.  
 It’s designed to make psychology education **accessible, engaging, and easy to follow**.
 
 ---

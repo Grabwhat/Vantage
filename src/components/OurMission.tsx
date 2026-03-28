@@ -3,7 +3,7 @@ export function OurMission() {
     <div className="py-12">
       <div className="max-w-6xl mx-auto px-4">
         <div className="max-w-4xl mx-auto mb-12">
-          <h1 className="text-5xl font-bold text-center mb-4">Vantage's Mission</h1>
+          <h1 className="text-5xl font-bold text-center mb-4">Dianoia's Mission</h1>
         </div>
 
         <div className="max-w-5xl mx-auto space-y-8">

@@ -56,7 +56,9 @@ export function Subjects() {
                   className="px-6 py-3 rounded-lg hover:bg-gray-200 hover:cursor-pointer h-auto whitespace-normal"
                 >
                   <span className="hidden sm:inline"> {subject.name} </span>
-                  <span className="sm:hidden"> {subject.name.split(' ')[0]} </span>
+                  <span className="sm:hidden">
+                    {subject.shortName ?? subject.name.split(' ')[0]}
+                  </span>
                 </TabsTrigger>
               ))}
             </TabsList>

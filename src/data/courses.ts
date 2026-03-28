@@ -1,6 +1,7 @@
 export interface Subject {
   id: string;
   name: string;
+  shortName?: string;
   icon: string;
   description: string;
   color: string;
@@ -46,6 +47,7 @@ export const subjects: Subject[] = [
   {
     id: "clinical-mental-health",
     name: "Clinical & Mental Health Psychology",
+    shortName: "Clinical",
     icon: "Heart",
     description: "Mental health, therapy approaches, and psychological disorders",
     color: "bg-green-500",
@@ -53,6 +55,7 @@ export const subjects: Subject[] = [
   {
     id: "business-marketing",
     name: "Business & Marketing Psychology",
+    shortName: "Business",
     icon: "TrendingUp",
     description: "Consumer behavior, persuasion, and marketing strategies",
     color: "bg-blue-500",
@@ -60,6 +63,7 @@ export const subjects: Subject[] = [
   {
     id: "organizational-workplace",
     name: "Organizational / Workplace Psychology",
+    shortName: "Org",
     icon: "Briefcase",
     description: "Leadership, team dynamics, and workplace productivity",
     color: "bg-purple-500",
@@ -67,6 +71,7 @@ export const subjects: Subject[] = [
   {
     id: "educational-psychology",
     name: "Educational Psychology",
+    shortName: "Edu",
     icon: "GraduationCap",
     description: "Learning theory, memory, and motivation in educational settings",
     color: "bg-yellow-500",
@@ -74,6 +79,7 @@ export const subjects: Subject[] = [
   {
     id: "sports-psychology",
     name: "Sports Psychology",
+    shortName: "Sports",
     icon: "Trophy",
     description: "Performance, mental conditioning, and athlete development",
     color: "bg-red-500",
@@ -81,6 +87,7 @@ export const subjects: Subject[] = [
   {
     id: "forensic-psychology",
     name: "Forensic Psychology",
+    shortName: "Forensic",
     icon: "Scale",
     description: "Criminal psychology, eyewitness testimony, and legal applications",
     color: "bg-indigo-500",
@@ -88,6 +95,7 @@ export const subjects: Subject[] = [
   {
     id: "social-influence",
     name: "Social Psychology & Influence",
+    shortName: "Social",
     icon: "Users",
     description: "Conformity, persuasion, and social behavior",
     color: "bg-pink-500",
@@ -95,6 +103,7 @@ export const subjects: Subject[] = [
   {
     id: "neuroscience",
     name: "Neuroscience & Brain Research",
+    shortName: "Neuro",
     icon: "Brain",
     description: "Brain function, neuroplasticity, and cognitive neuroscience",
     color: "bg-cyan-500",
